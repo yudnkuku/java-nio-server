@@ -120,6 +120,9 @@ public class QueueIntFlip {
 
     public int take() {
         if(!flipped){
+            if(readPos == capacity) {
+                readPos = 0;
+            }
             if(readPos < writePos){
                 return elements[readPos++];
             } else {

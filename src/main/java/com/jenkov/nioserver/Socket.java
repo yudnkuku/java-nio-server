@@ -6,6 +6,7 @@ import java.nio.channels.SocketChannel;
 
 /**
  * Created by jjenkov on 16-10-2015.
+ * Socket对象，封装了SocketChannel，并为每个SocketChannel配置了一个单独的MessageReader和MessageWriter
  */
 public class Socket {
 

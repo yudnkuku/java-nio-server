@@ -9,7 +9,7 @@ import java.util.concurrent.BlockingQueue;
  * Created by jjenkov on 24-10-2015.
  */
 public class Server {
-
+    private static final int SOCKET_NUM = 8000;
     private SocketAccepter  socketAccepter  = null;
     private SocketProcessor socketProcessor = null;
 
@@ -25,7 +25,8 @@ public class Server {
 
     public void start() throws IOException {
 
-        Queue socketQueue = new ArrayBlockingQueue(1024); //move 1024 to ServerConfig
+        //支持1024个socket连接
+        Queue socketQueue = new ArrayBlockingQueue(SOCKET_NUM);
 
         this.socketAccepter  = new SocketAccepter(tcpPort, socketQueue);
 

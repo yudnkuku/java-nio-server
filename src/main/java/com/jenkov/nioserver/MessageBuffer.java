@@ -17,11 +17,13 @@ public class MessageBuffer {
     private static final int CAPACITY_MEDIUM = 128  * KB;
     private static final int CAPACITY_LARGE  = 1024 * KB;
 
-    //package scope (default) - so they can be accessed from unit tests.
-    byte[]  smallMessageBuffer  = new byte[1024 *   4 * KB];   //1024 x   4KB messages =  4MB.
-    byte[]  mediumMessageBuffer = new byte[128  * 128 * KB];   // 128 x 128KB messages = 16MB.
-    byte[]  largeMessageBuffer  = new byte[16   *   1 * MB];   //  16 *   1MB messages = 16MB.
+    //消息数组
+    byte[]  smallMessageBuffer  = new byte[1024 *   4 * KB];   //4KB block * 1024
+    byte[]  mediumMessageBuffer = new byte[128  * 128 * KB];   //128KB block * 128
+    byte[]  largeMessageBuffer  = new byte[16   *   1 * MB];   //1MB block * 16
 
+    //QueueIntFlip维护了消息数组的偏移地址,其容量是根据数组块的数量来确定的
+    // 例如对于smallMessageBuffer block size 4KB * 1024，对应的QueueIntFlip capacity 1024
     QueueIntFlip smallMessageBufferFreeBlocks  = new QueueIntFlip(1024); // 1024 free sections
     QueueIntFlip mediumMessageBufferFreeBlocks = new QueueIntFlip(128);  // 128  free sections
     QueueIntFlip largeMessageBufferFreeBlocks  = new QueueIntFlip(16);   // 16   free sections
@@ -42,6 +44,7 @@ public class MessageBuffer {
         }
     }
 
+    //获取Message实例，优先使用smallMessageBuffer，即最小单位是4KB的块
     public Message getMessage() {
         int nextFreeSmallBlock = this.smallMessageBufferFreeBlocks.take();
 
@@ -57,6 +60,11 @@ public class MessageBuffer {
         return message;
     }
 
+    /**
+     * 扩容操作，将消息复制到更大的数组中
+     * @param message
+     * @return
+     */
     public boolean expandMessage(Message message){
         if(message.capacity == CAPACITY_SMALL){
             return moveMessage(message, this.smallMessageBufferFreeBlocks, this.mediumMessageBufferFreeBlocks, this.mediumMessageBuffer, CAPACITY_MEDIUM);
@@ -73,6 +81,8 @@ public class MessageBuffer {
 
         System.arraycopy(message.sharedArray, message.offset, dest, nextFreeBlock, message.length);
 
+        //此时srcBlockQueue的writePos=capacity，会将writePos置0并将flipped标志位置true，表示数组反转，此时写位置在读位置前面
+        //并将消息的offset写入srcBlockQueue
         srcBlockQueue.put(message.offset); //free smaller block after copy
 
         message.sharedArray = dest;

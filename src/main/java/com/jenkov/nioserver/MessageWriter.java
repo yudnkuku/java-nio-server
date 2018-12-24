@@ -25,6 +25,12 @@ public class MessageWriter {
         }
     }
 
+    /**
+     * 向socket中写入数据
+     * @param socket
+     * @param byteBuffer
+     * @throws IOException
+     */
     public void write(Socket socket, ByteBuffer byteBuffer) throws IOException {
         byteBuffer.put(this.messageInProgress.sharedArray, this.messageInProgress.offset + this.bytesWritten, this.messageInProgress.length - this.bytesWritten);
         byteBuffer.flip();

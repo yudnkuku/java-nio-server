@@ -7,13 +7,23 @@ import java.nio.ByteBuffer;
  */
 public class Message {
 
+    //MessageBuffer
     private MessageBuffer messageBuffer = null;
 
+    //socket id
     public long socketId = 0; // the id of source socket or destination socket, depending on whether is going in or out.
 
+    //共享数组，MessageBuffer中不同类型的数组-small（4MB）/medium（16MB）/large（16MB）
     public byte[] sharedArray = null;
-    public int    offset      = 0; //offset into sharedArray where this message data starts.
+
+    //sharedArray中消息的偏移地址，由对应的QueueIntFlip实例维护
+    //针对不同大小的消息构建了不同的QueueIntFlip实例，分别为QueueIntFlip(1024),QueueIntFlip(128),QueueIntFlip(16)
+    public int    offset      = 0;
+
+    //分配给消息的容量大小(块大小)，有三档：4KB 128KB 1MB
     public int    capacity    = 0; //the size of the section in the sharedArray allocated to this message.
+
+    //消息长度，此消息长度必然小于capacity
     public int    length      = 0; //the number of bytes used of the allocated section.
 
     public Object metaData    = null;
@@ -23,22 +33,27 @@ public class Message {
     }
 
     /**
-     * Writes data from the ByteBuffer into this message - meaning into the buffer backing this message.
-     *
-     * @param byteBuffer The ByteBuffer containing the message data to write.
+     * 将byteBuffer中的数据写到Message实例中(内部维护了一个sharedArray存放数据，sharedArray)，如果byteBuffer中的长度过长需要扩容
+     * @param byteBuffer
      * @return
      */
     public int writeToMessage(ByteBuffer byteBuffer){
         int remaining = byteBuffer.remaining();
 
+        //如果消息长度太大，需要扩容处理
         while(this.length + remaining > capacity){
             if(!this.messageBuffer.expandMessage(this)) {
+                System.out.println("消息总量超过16MB，无法完成扩容");
                 return -1;
             }
         }
 
         int bytesToCopy = Math.min(remaining, this.capacity - this.length);
+
+        //将byteBuffer中的数据复制到sharedArray offset处
         byteBuffer.get(this.sharedArray, this.offset + this.length, bytesToCopy);
+
+        //更新Message length属性
         this.length += bytesToCopy;
 
         return bytesToCopy;
@@ -90,8 +105,9 @@ public class Message {
      * @param endIndex  The end index of the first message in the buffer of the message given as parameter.
      */
     public void writePartialMessageToMessage(Message message, int endIndex){
-        int startIndexOfPartialMessage = message.offset + endIndex;
-        int lengthOfPartialMessage     = (message.offset + message.length) - endIndex;
+//        int startIndexOfPartialMessage = message.offset + endIndex;
+        int startIndexOfPartialMessage = endIndex + 1;
+        int lengthOfPartialMessage     = (message.offset + message.length) - endIndex + 1;
 
         System.arraycopy(message.sharedArray, startIndexOfPartialMessage, this.sharedArray, this.offset, lengthOfPartialMessage);
     }

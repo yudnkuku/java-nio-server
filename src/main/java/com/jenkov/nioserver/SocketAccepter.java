@@ -15,6 +15,7 @@ public class SocketAccepter implements Runnable{
     private int tcpPort = 0;
     private ServerSocketChannel serverSocket = null;
 
+    //Socket Queue  有连接进来时将socket入队
     private Queue socketQueue = null;
 
     public SocketAccepter(int tcpPort, Queue socketQueue)  {
@@ -41,6 +42,7 @@ public class SocketAccepter implements Runnable{
                 System.out.println("Socket accepted: " + socketChannel);
 
                 //todo check if the queue can even accept more sockets.
+                //有连接进来，将channel封装成Socket入队
                 this.socketQueue.add(new Socket(socketChannel));
 
             } catch(IOException e){

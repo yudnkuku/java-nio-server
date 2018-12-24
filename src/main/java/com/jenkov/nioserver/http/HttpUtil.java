@@ -16,6 +16,14 @@ public class HttpUtil {
     private static final byte[] HOST           = new byte[]{'H','o','s','t'};
     private static final byte[] CONTENT_LENGTH = new byte[]{'C','o','n','t','e','n','t','-','L','e','n','g','t','h'};
 
+    /**
+     * 解析http请求消息，返回第一个完整的body end index，如果没有一个完整的body，返回-1
+     * @param src           字节数组
+     * @param startIndex    起始index
+     * @param endIndex      终止index
+     * @param httpHeaders
+     * @return              第一个完整的body end index，如果没有一个完整的body，返回-1
+     */
     public static int parseHttpRequest(byte[] src, int startIndex, int endIndex, HttpHeaders httpHeaders){
 
 
@@ -54,10 +62,11 @@ public class HttpUtil {
 
         //check that byte array contains full HTTP message.
         int bodyStartIndex = endOfHeader + 1;
-        int bodyEndIndex  = bodyStartIndex + httpHeaders.contentLength;
+        int bodyEndIndex  = bodyStartIndex + httpHeaders.contentLength - 1;
 
         if(bodyEndIndex <= endIndex){
             //byte array contains a full HTTP request
+            //大于一个完整的HTTP请求
             httpHeaders.bodyStartIndex = bodyStartIndex;
             httpHeaders.bodyEndIndex   = bodyEndIndex;
             return bodyEndIndex;
